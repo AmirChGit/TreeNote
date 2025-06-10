@@ -160,6 +160,7 @@ class TreeNote {
         panel.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
         panel.style.padding = '5px';
         panel.style.borderRadius = '20px';
+        panel.style.border = '1px solid rgba(255, 255, 255, 0.3)';
 
         const buttons = [
             { icon: '🌿', action: () => this.startNewBranch(branch, isIntersection), tooltip: 'Add Branch' }
@@ -170,6 +171,8 @@ class TreeNote {
         }
         // Add move button
         buttons.push({ icon: '✥', action: null, tooltip: 'Move Node', isMove: true });
+        // Add delete button
+        buttons.push({ icon: '🗑️', action: () => this.deleteBranch(branch), tooltip: 'Delete Branch' });
 
         buttons.forEach(({ icon, action, tooltip, isMove }) => {
             const button = document.createElement('button');
@@ -257,12 +260,8 @@ class TreeNote {
                     document.addEventListener('mousemove', onMouseMove);
                     document.addEventListener('mouseup', onMouseUp);
                 });
-            } else {
-                button.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    action();
-                    panel.remove();
-                });
+            } else if (action) {
+                button.addEventListener('click', action);
             }
             panel.appendChild(button);
         });
@@ -474,29 +473,226 @@ class TreeNote {
     }
 
     showLeafNote(leaf) {
-        const screenX = (leaf.x * this.tree.scale) + this.tree.offset.x;
-        const screenY = (leaf.y * this.tree.scale) + this.tree.offset.y;
+        if (this.activePanel) {
+            this.activePanel.remove();
+        }
 
-        Note.createViewPanel(
-            leaf.note,
-            screenX,
-            screenY,
-            (note) => {
-                leaf.note = note;
-                this.saveData();
-            },
-            () => {
-                const index = this.tree.leaves.indexOf(leaf);
-                if (index > -1) {
-                    this.tree.leaves.splice(index, 1);
-                    this.saveData();
-                    this.tree.draw();
-                }
-            },
-            () => {
-                // Close callback
+        const panel = document.createElement('div');
+        const rect = this.canvas.getBoundingClientRect();
+        const screenX = (leaf.x * this.tree.scale + this.tree.offset.x);
+        const screenY = (leaf.y * this.tree.scale + this.tree.offset.y);
+
+        panel.style.position = 'fixed';
+        panel.style.left = `${rect.left + screenX + 20}px`;
+        panel.style.top = `${rect.top + screenY}px`;
+        panel.style.zIndex = '1000';
+        panel.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+        panel.style.padding = '15px';
+        panel.style.borderRadius = '10px';
+        panel.style.minWidth = '250px';
+        panel.style.maxWidth = '400px';
+        panel.style.color = 'white';
+        panel.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+        panel.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+
+        // Create note display container
+        const noteDisplay = document.createElement('div');
+        noteDisplay.style.width = '100%';
+        noteDisplay.style.minHeight = '100px';
+        noteDisplay.style.marginBottom = '10px';
+        noteDisplay.style.fontFamily = 'Arial, sans-serif';
+        noteDisplay.style.fontSize = '14px';
+        noteDisplay.style.whiteSpace = 'pre-wrap';
+        noteDisplay.style.wordWrap = 'break-word';
+
+        // Format note content
+        let noteObj = {};
+        if (typeof leaf.note === 'object') {
+            try {
+                noteObj = typeof leaf.note === 'string' ? JSON.parse(leaf.note) : leaf.note;
+                const title = noteObj.title || '';
+                const description = noteObj.description || '';
+                const createdAt = noteObj.createdAt ? new Date(noteObj.createdAt).toLocaleString() : '';
+                const updatedAt = noteObj.updatedAt ? new Date(noteObj.updatedAt).toLocaleString() : '';
+
+                // Create title element
+                const titleElement = document.createElement('div');
+                titleElement.style.fontWeight = 'bold';
+                titleElement.style.fontSize = '16px';
+                titleElement.style.marginBottom = '10px';
+                titleElement.textContent = title;
+                noteDisplay.appendChild(titleElement);
+
+                // Create description element
+                const descElement = document.createElement('div');
+                descElement.style.marginBottom = '15px';
+                descElement.textContent = description;
+                noteDisplay.appendChild(descElement);
+
+                // Create metadata element
+                const metaElement = document.createElement('div');
+                metaElement.style.fontSize = '11px';
+                metaElement.style.color = 'rgba(255, 255, 255, 0.7)';
+                metaElement.style.borderTop = '1px solid rgba(255, 255, 255, 0.2)';
+                metaElement.style.paddingTop = '10px';
+                metaElement.innerHTML = `Created: ${createdAt}<br>Last updated: ${updatedAt}`;
+                noteDisplay.appendChild(metaElement);
+            } catch (e) {
+                noteDisplay.textContent = leaf.note || '';
             }
-        );
+        } else {
+            noteDisplay.textContent = leaf.note || '';
+        }
+
+        // Create edit container (initially hidden)
+        const editContainer = document.createElement('div');
+        editContainer.style.display = 'none';
+
+        // Create title input
+        const titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.placeholder = 'Title';
+        titleInput.value = noteObj.title || '';
+        titleInput.style.width = '100%';
+        titleInput.style.marginBottom = '10px';
+        titleInput.style.padding = '5px';
+        titleInput.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+        titleInput.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+        titleInput.style.borderRadius = '5px';
+        titleInput.style.fontFamily = 'Arial, sans-serif';
+        titleInput.style.fontSize = '16px';
+        titleInput.style.fontWeight = 'bold';
+        titleInput.style.color = 'white';
+        titleInput.style.boxSizing = 'border-box';
+
+        // Create description textarea
+        const descTextarea = document.createElement('textarea');
+        descTextarea.placeholder = 'Description';
+        descTextarea.value = noteObj.description || '';
+        descTextarea.style.width = '100%';
+        descTextarea.style.height = '100px';
+        descTextarea.style.marginBottom = '10px';
+        descTextarea.style.padding = '5px';
+        descTextarea.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+        descTextarea.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+        descTextarea.style.borderRadius = '5px';
+        descTextarea.style.fontFamily = 'Arial, sans-serif';
+        descTextarea.style.fontSize = '14px';
+        descTextarea.style.resize = 'vertical';
+        descTextarea.style.color = 'white';
+        descTextarea.style.boxSizing = 'border-box';
+
+        editContainer.appendChild(titleInput);
+        editContainer.appendChild(descTextarea);
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.gap = '5px';
+        buttonContainer.style.justifyContent = 'flex-end';
+        buttonContainer.style.marginTop = '10px';
+
+        // Edit button
+        const editButton = document.createElement('button');
+        editButton.textContent = '✎';
+        editButton.title = 'Edit';
+        this.styleButton(editButton);
+        editButton.addEventListener('click', () => {
+            noteDisplay.style.display = 'none';
+            editContainer.style.display = 'block';
+            titleInput.focus();
+            editButton.style.display = 'none';
+            saveButton.style.display = 'block';
+        });
+
+        // Save button (initially hidden)
+        const saveButton = document.createElement('button');
+        saveButton.textContent = '💾';
+        saveButton.title = 'Save';
+        saveButton.style.display = 'none';
+        this.styleButton(saveButton);
+        saveButton.addEventListener('click', async () => {
+            // Create or update note object
+            noteObj = {
+                title: titleInput.value.trim(),
+                description: descTextarea.value.trim(),
+                createdAt: noteObj.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            leaf.note = noteObj;
+            
+            // Update display
+            noteDisplay.innerHTML = '';
+            
+            // Create title element
+            const titleElement = document.createElement('div');
+            titleElement.style.fontWeight = 'bold';
+            titleElement.style.fontSize = '16px';
+            titleElement.style.marginBottom = '10px';
+            titleElement.textContent = noteObj.title;
+            noteDisplay.appendChild(titleElement);
+
+            // Create description element
+            const descElement = document.createElement('div');
+            descElement.style.marginBottom = '15px';
+            descElement.textContent = noteObj.description;
+            noteDisplay.appendChild(descElement);
+
+            // Create metadata element
+            const metaElement = document.createElement('div');
+            metaElement.style.fontSize = '11px';
+            metaElement.style.color = 'rgba(255, 255, 255, 0.7)';
+            metaElement.style.borderTop = '1px solid rgba(255, 255, 255, 0.2)';
+            metaElement.style.paddingTop = '10px';
+            metaElement.innerHTML = `Created: ${new Date(noteObj.createdAt).toLocaleString()}<br>Last updated: ${new Date(noteObj.updatedAt).toLocaleString()}`;
+            noteDisplay.appendChild(metaElement);
+            
+            editContainer.style.display = 'none';
+            noteDisplay.style.display = 'block';
+            editButton.style.display = 'block';
+            saveButton.style.display = 'none';
+            await this.saveData();
+        });
+
+        // Delete button
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = '🗑️';
+        deleteButton.title = 'Delete';
+        this.styleButton(deleteButton);
+        deleteButton.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to delete this leaf?')) {
+                const index = this.tree.leaves.indexOf(leaf);
+                if (index !== -1) {
+                    this.tree.leaves.splice(index, 1);
+                    await this.saveData();
+                    panel.remove();
+                    this.activePanel = null;
+                    this.draw();
+                    return;
+                }
+            }
+        });
+
+        // Close button
+        const closeButton = document.createElement('button');
+        closeButton.textContent = '✕';
+        closeButton.title = 'Close';
+        this.styleButton(closeButton);
+        closeButton.addEventListener('click', () => {
+            panel.remove();
+            this.activePanel = null;
+        });
+
+        buttonContainer.appendChild(editButton);
+        buttonContainer.appendChild(saveButton);
+        buttonContainer.appendChild(deleteButton);
+        buttonContainer.appendChild(closeButton);
+
+        panel.appendChild(noteDisplay);
+        panel.appendChild(editContainer);
+        panel.appendChild(buttonContainer);
+        document.body.appendChild(panel);
+        this.activePanel = panel;
     }
 
     handleMouseDown(e) {
@@ -808,6 +1004,67 @@ class TreeNote {
         if (this.moveIcon) {
             this.moveIcon.remove();
             this.moveIcon = null;
+        }
+    }
+
+    deleteBranch(branch) {
+        // Show confirmation dialog
+        if (confirm('Are you sure you want to delete this branch and all its children?')) {
+            // Count total descendants before deletion for thickness calculation
+            const totalDescendantsBefore = branch.countTotalDescendants();
+
+            // Remove all leaves attached to this branch and its children
+            const removeLeaves = (b) => {
+                // Remove leaves at this branch's nodes
+                this.tree.leaves = this.tree.leaves.filter(leaf => 
+                    !(Math.abs(leaf.x - b.startX) < 1 && Math.abs(leaf.y - b.startY) < 1) &&
+                    !(Math.abs(leaf.x - b.endX) < 1 && Math.abs(leaf.y - b.endY) < 1)
+                );
+                // Remove leaves from children
+                b.children.forEach(child => removeLeaves(child));
+            };
+            removeLeaves(branch);
+
+            // Remove all child branches recursively
+            const removeChildren = (b) => {
+                // First remove all children's children
+                b.children.forEach(child => removeChildren(child));
+                // Then remove this branch from the tree's branches array
+                const index = this.tree.branches.indexOf(b);
+                if (index !== -1) {
+                    this.tree.branches.splice(index, 1);
+                }
+            };
+            removeChildren(branch);
+
+            // Remove the branch from its parent
+            if (branch.parent) {
+                branch.parent.removeChild(branch);
+                // Update thickness for all branches up to root
+                let currentBranch = branch.parent;
+                while (currentBranch) {
+                    // Recalculate thickness based on remaining descendants
+                    const remainingDescendants = currentBranch.countTotalDescendants();
+                    const thicknessReduction = totalDescendantsBefore - remainingDescendants;
+                    currentBranch.thickness = Math.max(2, currentBranch.thickness - (thicknessReduction * 0.5));
+                    currentBranch = currentBranch.parent;
+                }
+            } else {
+                // If it's a root branch, remove it from the tree
+                const index = this.tree.branches.indexOf(branch);
+                if (index !== -1) {
+                    this.tree.branches.splice(index, 1);
+                }
+            }
+
+            // Close the options panel
+            if (this.activePanel) {
+                this.activePanel.remove();
+                this.activePanel = null;
+            }
+
+            this.draw();
+            this.saveData();
         }
     }
 }

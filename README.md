@@ -2,8 +2,6 @@
 
 TreeNote is a unique note-taking application that organizes notes in a tree structure, where each note is represented as a leaf on a branch. The application provides an intuitive visual interface for creating, organizing, and managing notes in a hierarchical structure.
 
-## Screenshot
-
 ![TreeNote Application](screenshots/treeNote.png)
 
 *TreeNote interface showing a tree structure with multiple branches and leaves containing notes*
@@ -51,7 +49,7 @@ TreeNote/
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/TreeNote.git
+   git clone https://github.com/AmirChGit/TreeNote.git
    cd TreeNote
    ```
 

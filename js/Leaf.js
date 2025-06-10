@@ -111,9 +111,31 @@ class Leaf {
 
     // Check if a point is within the leaf's area
     containsPoint(x, y) {
-        const dx = x - this.x;                         // X distance from center
-        const dy = y - this.y;                         // Y distance from center
-        const distance = Math.sqrt(dx * dx + dy * dy);  // Calculate distance
-        return distance <= 20 * this.scale;            // Check if within radius
+        // Transform point to leaf's coordinate space
+        const dx = x - this.x;
+        const dy = y - this.y;
+        
+        // Rotate point back to align with leaf's orientation
+        const rotatedX = dx * Math.cos(-this.rotation) - dy * Math.sin(-this.rotation);
+        const rotatedY = dx * Math.sin(-this.rotation) + dy * Math.cos(-this.rotation);
+        
+        // Scale point to account for leaf's scale
+        const scaledX = rotatedX / this.scale;
+        const scaledY = rotatedY / this.scale;
+        
+        // Check if point is inside the leaf shape using ray casting algorithm
+        let inside = false;
+        for (let i = 0, j = this.shape.length - 1; i < this.shape.length; j = i++) {
+            const xi = this.shape[i].x, yi = this.shape[i].y;
+            const xj = this.shape[j].x, yj = this.shape[j].y;
+            
+            // Add a small tolerance to make clicking easier
+            const tolerance = 2;
+            const intersect = ((yi > scaledY - tolerance) !== (yj > scaledY - tolerance))
+                && (scaledX < (xj - xi) * (scaledY - yi) / (yj - yi) + xi + tolerance);
+            if (intersect) inside = !inside;
+        }
+        
+        return inside;
     }
 } 
