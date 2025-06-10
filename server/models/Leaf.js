@@ -6,35 +6,59 @@ const mongoose = require('mongoose');
 const leafSchema = new mongoose.Schema({
     // X coordinate of the leaf
     // Required number that determines the horizontal position
-    x: { type: Number, required: true },
+    x: {
+        type: Number,
+        required: true
+    },
 
     // Y coordinate of the leaf
     // Required number that determines the vertical position
-    y: { type: Number, required: true },
+    y: {
+        type: Number,
+        required: true
+    },
 
     // Content of the note
     // Required string that contains the actual note text
-    note: { type: String, required: true },
+    note: {
+        type: mongoose.Schema.Types.Mixed,
+        default: null
+    },
 
     // Angle of the leaf relative to its branch
     // Required number that determines the orientation
-    branchAngle: { type: Number, required: true },
+    branchAngle: {
+        type: Number,
+        default: 0
+    },
 
     // Index of this leaf among all leaves on the same branch
     // Required number for ordering leaves
-    leafIndex: { type: Number, required: true },
+    leafIndex: {
+        type: Number,
+        default: 0
+    },
 
     // Total number of leaves on the same branch
     // Required number for calculating leaf spacing
-    totalLeaves: { type: Number, required: true },
+    totalLeaves: {
+        type: Number,
+        default: 1
+    },
 
     // Scale factor for the leaf
     // Required number that determines the size of the leaf
-    scale: { type: Number, required: true },
+    scale: {
+        type: Number,
+        default: 1
+    },
 
     // Rotation angle of the leaf
     // Required number that determines the leaf's orientation
-    rotation: { type: Number, required: true }
+    rotation: {
+        type: Number,
+        default: 0
+    }
 }, 
 // Enable timestamps for automatic createdAt and updatedAt fields
 { timestamps: true });

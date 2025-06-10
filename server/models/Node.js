@@ -11,7 +11,7 @@ const nodeSchema = new mongoose.Schema({
     // Y coordinate of the node
     // Required number that determines the vertical position
     y: { type: Number, required: true }
-});
+}, { timestamps: true });
 
 // Create and export the Node model
 // This model will be used to interact with the nodes collection in MongoDB

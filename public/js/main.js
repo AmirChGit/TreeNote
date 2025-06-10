@@ -11,9 +11,18 @@ class TreeNote {
         this.activeDragTarget = null;
         this.isDraggingNode = false;
         this.api = new API();
+        this.user = null;
+        this.authToken = localStorage.getItem('authToken');
+        
+        // Get auth panel elements
+        this.authPanel = document.getElementById('authPanel');
+        this.loginPanel = document.getElementById('loginPanel');
+        this.registerPanel = document.getElementById('registerPanel');
+        this.verificationPanel = document.getElementById('verificationPanel');
+        this.seed = document.getElementById('seed');
         
         this.setupEventListeners();
-        this.loadData();
+        this.checkAuth();
         this.animate();
 
         // Add Escape key handler for branch creation cancel
@@ -26,19 +35,169 @@ class TreeNote {
         });
     }
 
-    clearData() {
-        localStorage.removeItem('treeNoteData');
-        this.tree.branches = [];
-        this.tree.leaves = [];
+    async checkAuth() {
+        if (this.authToken) {
+            try {
+                const user = await this.api.verifyToken();
+                this.user = user;
+                await this.loadData();
+                this.showUserControls();
+            } catch (error) {
+                console.error('Auth error:', error);
+                localStorage.removeItem('authToken');
+                this.authToken = null;
+                this.showAuthPanel();
+            }
+        } else {
+            this.showAuthPanel();
+        }
+    }
+
+    showAuthPanel() {
+        this.authPanel.style.display = 'flex';
+        this.loginPanel.style.display = 'flex';
+        this.registerPanel.style.display = 'none';
+        this.verificationPanel.style.display = 'none';
+        this.seed.style.display = 'none';
     }
 
     setupEventListeners() {
+        // Canvas event listeners
         this.canvas.addEventListener('click', this.handleClick.bind(this));
         this.canvas.addEventListener('dblclick', this.handleDoubleClick.bind(this));
         this.canvas.addEventListener('mousemove', this.handleMouseMove.bind(this));
         this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
         this.canvas.addEventListener('mouseup', this.handleMouseUp.bind(this));
         document.addEventListener('mousedown', this.handleGlobalClick.bind(this));
+
+        // Auth form event listeners
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {
+                email: formData.get('email'),
+                password: formData.get('password')
+            };
+
+            try {
+                const response = await this.api.login(data);
+                this.authToken = response.token;
+                localStorage.setItem('authToken', response.token);
+                this.user = response.user;
+                this.authPanel.style.display = 'none';
+                this.loadData();
+                this.showUserControls();
+            } catch (error) {
+                alert(error.message || 'Login failed');
+            }
+        });
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = {
+                username: formData.get('username'),
+                email: formData.get('email'),
+                password: formData.get('password')
+            };
+
+            try {
+                await this.api.register(data);
+                alert('Registration successful! Please check your email for verification code.');
+                this.showVerificationPanel(data.email);
+            } catch (error) {
+                alert(error.message || 'Registration failed');
+            }
+        });
+
+        document.getElementById('verificationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const code = formData.get('code');
+
+            try {
+                await this.api.verifyEmail(this.verificationEmail, code);
+                alert('Email verified successfully! Please login.');
+                this.showAuthPanel();
+            } catch (error) {
+                alert(error.message || 'Verification failed');
+            }
+        });
+
+        // Auth panel navigation
+        document.getElementById('showRegisterBtn').addEventListener('click', () => {
+            this.loginPanel.style.display = 'none';
+            this.registerPanel.style.display = 'flex';
+        });
+
+        document.getElementById('showLoginBtn').addEventListener('click', () => {
+            this.registerPanel.style.display = 'none';
+            this.loginPanel.style.display = 'flex';
+        });
+    }
+
+    showVerificationPanel(email) {
+        this.verificationEmail = email;
+        this.loginPanel.style.display = 'none';
+        this.registerPanel.style.display = 'none';
+        this.verificationPanel.style.display = 'flex';
+    }
+
+    showUserControls() {
+        const bottomBar = document.createElement('div');
+        bottomBar.style.position = 'fixed';
+        bottomBar.style.bottom = '0';
+        bottomBar.style.left = '0';
+        bottomBar.style.right = '0';
+        bottomBar.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+        bottomBar.style.padding = '10px';
+        bottomBar.style.display = 'flex';
+        bottomBar.style.justifyContent = 'flex-end';
+        bottomBar.style.opacity = '0';
+        bottomBar.style.transition = 'opacity 0.3s ease';
+        bottomBar.style.zIndex = '1000';
+
+        const logoutButton = document.createElement('button');
+        logoutButton.textContent = 'Logout';
+        logoutButton.style.padding = '8px 15px';
+        logoutButton.style.backgroundColor = 'transparent';
+        logoutButton.style.color = 'white';
+        logoutButton.style.border = '1px solid white';
+        logoutButton.style.borderRadius = '5px';
+        logoutButton.style.cursor = 'pointer';
+        logoutButton.style.fontSize = '14px';
+        logoutButton.style.marginRight = '20px';
+
+        logoutButton.addEventListener('click', async () => {
+            try {
+                await this.api.logout(this.authToken);
+                localStorage.removeItem('authToken');
+                this.authToken = null;
+                this.user = null;
+                bottomBar.remove();
+                this.showAuthPanel();
+            } catch (error) {
+                alert(error.message || 'Logout failed');
+            }
+        });
+
+        bottomBar.appendChild(logoutButton);
+        document.body.appendChild(bottomBar);
+
+        // Show/hide on hover
+        document.addEventListener('mousemove', (e) => {
+            if (e.clientY > window.innerHeight - 50) {
+                bottomBar.style.opacity = '1';
+            } else {
+                bottomBar.style.opacity = '0';
+            }
+        });
+    }
+
+    clearData() {
+        localStorage.removeItem('treeNoteData');
+        this.tree.branches = [];
+        this.tree.leaves = [];
     }
 
     handleGlobalClick(e) {
@@ -804,7 +963,7 @@ class TreeNote {
                 leaves: this.tree.leaves.map(leaf => ({
                     x: Number(leaf.x),
                     y: Number(leaf.y),
-                    note: JSON.stringify(leaf.note),
+                    note: leaf.note,
                     branchAngle: Number(leaf.branchAngle || 0),
                     leafIndex: Number(leaf.leafIndex || 0),
                     totalLeaves: Number(leaf.totalLeaves || 1),
@@ -814,10 +973,41 @@ class TreeNote {
             };
             
             console.log('Saving tree data:', JSON.stringify(treeData, null, 2));
-            await this.api.saveTree(treeData);
+            const savedTree = await this.api.saveTree(treeData);
+            console.log('Tree saved successfully:', savedTree);
+            
+            // Update local IDs with server IDs
+            if (savedTree.nodes) {
+                savedTree.nodes.forEach((node, index) => {
+                    if (this.tree.nodes[index]) {
+                        this.tree.nodes[index].id = node._id;
+                    }
+                });
+            }
+            
+            if (savedTree.branches) {
+                savedTree.branches.forEach((branch, index) => {
+                    if (this.tree.branches[index]) {
+                        this.tree.branches[index].id = branch._id;
+                    }
+                });
+            }
+            
+            if (savedTree.leaves) {
+                savedTree.leaves.forEach((leaf, index) => {
+                    if (this.tree.leaves[index]) {
+                        this.tree.leaves[index].id = leaf._id;
+                    }
+                });
+            }
         } catch (error) {
             console.error('Error saving data:', error);
-            throw error; // Re-throw to handle in the calling code
+            if (error.message === 'Invalid token') {
+                localStorage.removeItem('authToken');
+                this.authToken = null;
+                this.showAuthPanel();
+            }
+            throw error;
         }
     }
 
@@ -836,7 +1026,7 @@ class TreeNote {
             if (treeData.nodes && Array.isArray(treeData.nodes)) {
                 treeData.nodes.forEach(nodeData => {
                     const node = new Node(nodeData.x, nodeData.y);
-                    node.id = nodeData._id; // Use MongoDB _id
+                    node.id = nodeData._id;
                     this.tree.nodes.push(node);
                 });
             }
@@ -849,7 +1039,7 @@ class TreeNote {
                     if (startNode && endNode) {
                         const branch = new Branch(startNode, endNode);
                         branch.thickness = branchData.thickness;
-                        branch.id = branchData._id; // Use MongoDB _id
+                        branch.id = branchData._id;
                         this.tree.branches.push(branch);
                     }
                 });
@@ -859,7 +1049,8 @@ class TreeNote {
             if (treeData.leaves && Array.isArray(treeData.leaves)) {
                 treeData.leaves.forEach(leafData => {
                     try {
-                        const note = Note.fromJSON(JSON.parse(leafData.note));
+                        const note = typeof leafData.note === 'string' ? 
+                            JSON.parse(leafData.note) : leafData.note;
                         const leaf = new Leaf(
                             leafData.x,
                             leafData.y,
@@ -870,7 +1061,7 @@ class TreeNote {
                         );
                         leaf.scale = leafData.scale;
                         leaf.rotation = leafData.rotation;
-                        leaf.id = leafData._id; // Use MongoDB _id
+                        leaf.id = leafData._id;
                         this.tree.leaves.push(leaf);
                     } catch (error) {
                         console.error('Error loading leaf:', error);
@@ -886,8 +1077,14 @@ class TreeNote {
             this.draw();
         } catch (error) {
             console.error('Error loading data:', error);
-            // If no tree exists, create a new one
-            await this.api.createTree();
+            if (error.message === 'Invalid token') {
+                localStorage.removeItem('authToken');
+                this.authToken = null;
+                this.showAuthPanel();
+            } else {
+                // If no tree exists, create a new one
+                await this.api.createTree();
+            }
         }
     }
 
@@ -1071,5 +1268,7 @@ class TreeNote {
 
 // Initialize the application when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new TreeNote();
+    const canvas = document.getElementById('treeCanvas');
+    const api = new API();
+    const treeNote = new TreeNote(canvas, api);
 }); 

@@ -14,7 +14,7 @@ const branchSchema = new mongoose.Schema({
 
     // Thickness of the branch
     // Required number that determines the visual width of the branch
-    thickness: { type: Number, required: true },
+    thickness: { type: Number, default: 2 },
 
     // Array of references to child branches
     // These are branches that extend from this branch

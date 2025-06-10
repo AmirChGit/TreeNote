@@ -4,28 +4,31 @@ const mongoose = require('mongoose');
 // Define the schema for the Tree model
 // This schema represents the structure of a tree in the application
 const treeSchema = new mongoose.Schema({
-    // Scale factor for the entire tree
-    // Required number that determines the overall size of the tree
-    scale: { type: Number, required: true },
-
-    // Offset position of the tree
-    // Required object containing x and y coordinates
-    offset: {
-        x: { type: Number, required: true },  // X coordinate of the tree's position
-        y: { type: Number, required: true }   // Y coordinate of the tree's position
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     },
-
-    // Array of references to Node documents
-    // Each node represents a point in the tree structure
-    nodes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Node' }],
-
-    // Array of references to Branch documents
-    // Each branch represents a connection between nodes
-    branches: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Branch' }],
-
-    // Array of references to Leaf documents
-    // Each leaf represents a note or content attached to the tree
-    leaves: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Leaf' }]
+    scale: {
+        type: Number,
+        default: 1
+    },
+    offset: {
+        x: { type: Number, default: 0 },
+        y: { type: Number, default: 0 }
+    },
+    nodes: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Node'
+    }],
+    branches: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Branch'
+    }],
+    leaves: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Leaf'
+    }]
 }, 
 // Enable timestamps for automatic createdAt and updatedAt fields
 { timestamps: true });
