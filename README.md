@@ -4,7 +4,7 @@ TreeNote is a unique note-taking application that organizes notes in a tree stru
 
 🌐 [Live Demo](https://treenote.onrender.com)
 
-![TreeNote Interface](screenshots/interface.png)
+![TreeNote Interface](screenshots/treeNote.png)
 
 ## Features
 
