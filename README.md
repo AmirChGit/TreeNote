@@ -2,50 +2,43 @@
 
 TreeNote is a unique note-taking application that organizes notes in a tree structure, where each note is represented as a leaf on a branch. The application provides an intuitive visual interface for creating, organizing, and managing notes in a hierarchical structure.
 
-![TreeNote Application](screenshots/treeNote.png)
+🌐 [Live Demo](https://treenote.onrender.com)
 
-*TreeNote interface showing a tree structure with multiple branches and leaves containing notes*
+![TreeNote Interface](screenshots/interface.png)
 
 ## Features
 
-- Interactive tree visualization with drag-and-drop functionality
-- Zoom and pan capabilities for easy navigation
-- Dynamic branch thickness based on the number of child branches
-- Beautiful leaf-shaped notes with subtle variations
-- Real-time updates and persistence
-- Responsive design that adapts to window size
-- MongoDB backend for data persistence
+- 🌳 Interactive tree visualization with drag-and-drop functionality
+- 📝 Beautiful leaf-shaped notes with subtle variations
+- 🔄 Real-time updates and persistence
+- 📱 Responsive design for both desktop and mobile
+- 🔐 Secure user authentication with email verification
+- 🎨 Dynamic branch thickness based on content
+- 🔍 Zoom and pan capabilities for easy navigation
+- 💾 Automatic saving of your tree structure
 
-## Project Structure
+## Tech Stack
 
-```
-TreeNote/
-├── app.js                 # Main server application
-├── index.html            # Main HTML file
-├── styles.css            # Global styles
-├── js/                   # Frontend JavaScript files
-│   ├── tree.js          # Main Tree class
-│   ├── Node.js          # Node class for tree points
-│   ├── Branch.js        # Branch class for connections
-│   └── Leaf.js          # Leaf class for notes
-├── server/              # Backend server files
-│   ├── models/          # MongoDB models
-│   │   ├── Tree.js      # Tree model
-│   │   ├── Node.js      # Node model
-│   │   ├── Branch.js    # Branch model
-│   │   └── Leaf.js      # Leaf model
-│   └── routes/          # API routes
-│       └── tree.js      # Tree-related endpoints
-└── package.json         # Project dependencies
-```
+- **Frontend:**
+  - HTML5 Canvas for tree visualization
+  - Vanilla JavaScript for interactivity
+  - Responsive CSS for mobile compatibility
 
-## Prerequisites
+- **Backend:**
+  - Node.js with Express.js
+  - MongoDB for data persistence
+  - JWT for authentication
+  - Nodemailer for email verification
+
+## Getting Started
+
+### Prerequisites
 
 - Node.js (v14 or higher)
 - MongoDB (v4.4 or higher)
 - npm (Node Package Manager)
 
-## Installation
+### Installation
 
 1. Clone the repository:
    ```bash
@@ -60,139 +53,76 @@ TreeNote/
 
 3. Create a `.env` file in the root directory with the following variables:
    ```
-   MONGODB_URI=mongodb://localhost:27017/treeNote
+   MONGODB_URI=your_mongodb_uri
    PORT=3000
+   JWT_SECRET=your_secret_key
+   EMAIL_USER=your_gmail_address
+   EMAIL_PASS=your_gmail_app_password
    ```
 
-4. Start MongoDB:
-   ```bash
-   mongod
-   ```
-
-5. Start the application:
+4. Start the application:
    ```bash
    npm start
    ```
 
 The application will be available at `http://localhost:3000`
 
+## Usage Guide
+
+### Creating Notes
+1. Click on a branch to add a new leaf
+2. Enter your note content
+3. The leaf will be automatically positioned and styled
+
+### Organizing Notes
+1. Drag branches to reorganize the tree structure
+2. Add new branches by connecting nodes
+3. The tree will automatically adjust branch thickness
+
+### Navigation
+1. Drag the canvas to pan
+2. Use the mouse wheel to zoom
+3. The view will automatically center on the tree
+
+### Mobile Usage
+1. Open the app in your mobile browser
+2. Add to home screen for a native app experience
+3. Use touch gestures for interaction:
+   - Pinch to zoom
+   - Drag to pan
+   - Tap to create/edit notes
+
 ## API Endpoints
 
+### Authentication
+- `POST /api/auth/register` - Register a new user
+- `POST /api/auth/verify-email` - Verify user email
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/verify-token` - Verify JWT token
+
 ### Tree Operations
+- `GET /api/tree` - Get user's tree structure
+- `POST /api/tree` - Save tree structure
 
-- `GET /api/tree`
-  - Retrieves the entire tree structure
-  - Returns: Tree object with nodes, branches, and leaves
+## Project Structure
 
-- `POST /api/tree`
-  - Creates a new tree
-  - Body: `{ scale: number, offset: { x: number, y: number } }`
-  - Returns: Created tree object
-
-- `PUT /api/tree`
-  - Updates the entire tree structure
-  - Body: Complete tree object
-  - Returns: Updated tree object
-
-## Data Models
-
-### Tree Model
-```javascript
-{
-  scale: Number,          // Overall tree scale
-  offset: {               // Tree position
-    x: Number,
-    y: Number
-  },
-  nodes: [ObjectId],      // References to Node documents
-  branches: [ObjectId],   // References to Branch documents
-  leaves: [ObjectId]      // References to Leaf documents
-}
 ```
-
-### Node Model
-```javascript
-{
-  x: Number,              // X coordinate
-  y: Number               // Y coordinate
-}
+TreeNote/
+├── public/              # Frontend files
+│   ├── index.html      # Main HTML file
+│   ├── js/            # JavaScript files
+│   │   ├── api.js     # API client
+│   │   ├── Tree.js    # Tree visualization
+│   │   ├── Node.js    # Node management
+│   │   ├── Branch.js  # Branch management
+│   │   └── Leaf.js    # Note management
+├── server/             # Backend files
+│   ├── models/        # MongoDB models
+│   └── routes/        # API routes
+├── server.js          # Main server file
+└── package.json       # Project dependencies
 ```
-
-### Branch Model
-```javascript
-{
-  startNode: ObjectId,    // Reference to start Node
-  endNode: ObjectId,      // Reference to end Node
-  thickness: Number,      // Visual thickness
-  children: [ObjectId],   // References to child branches
-  parent: ObjectId        // Reference to parent branch
-}
-```
-
-### Leaf Model
-```javascript
-{
-  x: Number,              // X coordinate
-  y: Number,              // Y coordinate
-  note: String,           // Note content
-  branchAngle: Number,    // Angle relative to branch
-  leafIndex: Number,      // Position among leaves
-  totalLeaves: Number,    // Total leaves on branch
-  scale: Number,          // Visual scale
-  rotation: Number        // Rotation angle
-}
-```
-
-## Frontend Components
-
-### Tree Class
-The main class that manages the tree visualization and user interactions:
-- Canvas setup and management
-- Event handling (drag, zoom, pan)
-- Branch and leaf management
-- Drawing and rendering
-
-### Node Class
-Represents points in the tree structure:
-- Position management
-- Branch connections
-- Unique identification
-
-### Branch Class
-Manages connections between nodes:
-- Start and end node management
-- Child branch relationships
-- Thickness calculation
-- Drawing and rendering
-
-### Leaf Class
-Handles note visualization and interaction:
-- Position and rotation
-- Note content
-- Visual appearance
-- Drag and drop functionality
-
-## Usage
-
-1. **Creating Notes**
-   - Click on a branch to add a new leaf
-   - Enter your note content
-   - The leaf will be automatically positioned and styled
-
-2. **Organizing Notes**
-   - Drag branches to reorganize the tree structure
-   - Add new branches by connecting nodes
-   - The tree will automatically adjust branch thickness
-
-3. **Navigation**
-   - Drag the canvas to pan
-   - Use the mouse wheel to zoom
-   - The view will automatically center on the tree
-
-4. **Editing Notes**
-   - Click on a leaf to edit its content
-   - Drag leaves to reposition them
-   - The tree structure will update in real-time
 
 ## Contributing
 
@@ -201,3 +131,10 @@ Handles note visualization and interaction:
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+
+## Contact
+
+Amir Chachoui - [GitHub](https://github.com/AmirChGit)
+
+Project Link: [https://github.com/AmirChGit/TreeNote](https://github.com/AmirChGit/TreeNote)
