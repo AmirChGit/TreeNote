@@ -7,5 +7,5 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
+      - key: PORTs
         value: 3000 
