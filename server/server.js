@@ -7,7 +7,7 @@ const treeRoutes = require('./routes/tree');
 
 const app = express();
 
-// CORS configuration
+// CORS configuration 
 app.use(cors());
 
 // Basic middleware
